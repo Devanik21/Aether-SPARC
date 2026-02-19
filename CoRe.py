@@ -1,23 +1,22 @@
 """
-GhostStream Backend
+AETHER-SPARC Backend
+An Asynchronous Event-Triggered Sparse Proportional Compute Architecture
 
-This file implements TWO architectures under equal conditions:
+This file contains:
+- Dataset generation
+- Dense baseline model
+- AETHER-SPARC sparse model
+- Fair training routines
+- True MAC accounting
 
-1) DenseDSPModel      -> Traditional frame-based dense processing
-2) EventDrivenSNN     -> Asynchronous sparsity-based processing
-
-Both:
-- Use the SAME dataset
-- Same train/test split
-- Same loss function (MSE)
-- Same optimizer (Adam)
-- Same parameter count (approximately matched)
-- Same number of epochs
-- No external pretrained weights
-
-Goal: Fair comparison. Zero cheating.
-
-Author: GhostStream Research Prototype
+STRICT FAIRNESS:
+- Same architecture depth
+- Same hidden dimension
+- Same optimizer
+- Same loss
+- Same epochs
+- Same dataset
+- No pretrained weights
 """
 
 import numpy as np
@@ -25,155 +24,169 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from dataclasses import dataclass
-from typing import Tuple
 
 
-# ==============================
-# 1. Dataset Generator
-# ==============================
+# ============================================================
+# Dataset
+# ============================================================
 
-class SyntheticAudioDataset:
-    """
-    Generates synthetic audio with silence + tone bursts.
-    Both models will use identical data.
-    """
-
-    def __init__(self, length=16000, burst_prob=0.05, noise_std=0.01):
+class SyntheticBurstAudio:
+    def __init__(self, length=20000, burst_probability=0.01, noise_std=0.01):
         self.length = length
-        self.burst_prob = burst_prob
+        self.burst_probability = burst_probability
         self.noise_std = noise_std
 
-    def generate(self) -> Tuple[np.ndarray, np.ndarray]:
+    def generate(self):
         t = np.linspace(0, 1, self.length)
-        signal = np.zeros_like(t)
+        clean = np.zeros_like(t)
 
-        # Random tone bursts
-        for i in range(self.length):
-            if np.random.rand() < self.burst_prob:
-                freq = np.random.uniform(200, 1000)
-                duration = np.random.randint(100, 400)
+        i = 0
+        while i < self.length:
+            if np.random.rand() < self.burst_probability:
+                freq = np.random.uniform(200, 1500)
+                duration = np.random.randint(200, 800)
                 end = min(self.length, i + duration)
-                signal[i:end] += 0.5 * np.sin(2 * np.pi * freq * t[i:end])
+                clean[i:end] += 0.7 * np.sin(2 * np.pi * freq * t[i:end])
+                i = end
+            else:
+                i += 1
 
-        noisy = signal + np.random.normal(0, self.noise_std, self.length)
-        return noisy.astype(np.float32), signal.astype(np.float32)
+        noisy = clean + np.random.normal(0, self.noise_std, self.length)
+        return noisy.astype(np.float32), clean.astype(np.float32)
 
 
-# ==============================
-# 2. Dense DSP Model
-# ==============================
+# ============================================================
+# Models
+# ============================================================
 
-class DenseDSPModel(nn.Module):
-    """
-    Frame-based fully dense processing.
-    Processes every sample regardless of silence.
-    """
-
+class DenseDSP(nn.Module):
     def __init__(self, hidden=128):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(1, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, 1)
-        )
+        self.fc1 = nn.Linear(1, hidden)
+        self.fc2 = nn.Linear(hidden, hidden)
+        self.fc3 = nn.Linear(hidden, 1)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        return self.net(x)
+        x = self.relu(self.fc1(x))
+        x = self.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
 
 
-# ==============================
-# 3. Event-Driven SNN-like Model
-# ==============================
-
-class EventDrivenSNN(nn.Module):
-    """
-    Processes only when amplitude change exceeds threshold.
-    Mimics event-driven spiking behavior.
-    """
-
+class AetherSparcNet(nn.Module):
     def __init__(self, hidden=128, threshold=0.02):
         super().__init__()
         self.threshold = threshold
-        self.net = nn.Sequential(
-            nn.Linear(1, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, 1)
-        )
+        self.fc1 = nn.Linear(1, hidden)
+        self.fc2 = nn.Linear(hidden, hidden)
+        self.fc3 = nn.Linear(hidden, 1)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        # Event mask
-        diff = torch.abs(x - torch.roll(x, shifts=1, dims=0))
+        diff = torch.abs(x - torch.roll(x, 1, 0))
         mask = (diff > self.threshold).float()
 
-        # Only process events
-        processed = self.net(x)
-        return processed * mask
+        active_indices = mask.squeeze().nonzero(as_tuple=False).squeeze()
+
+        if active_indices.numel() == 0:
+            return torch.zeros_like(x), 0
+
+        x_active = x[active_indices]
+
+        out_active = self.relu(self.fc1(x_active))
+        out_active = self.relu(self.fc2(out_active))
+        out_active = self.fc3(out_active)
+
+        output = torch.zeros_like(x)
+        output[active_indices] = out_active
+
+        return output, len(active_indices)
 
 
-# ==============================
-# 4. Training Utility
-# ==============================
+# ============================================================
+# Training & MAC Accounting
+# ============================================================
 
 @dataclass
-class TrainingResult:
-    train_loss: float
-    operations_estimate: int
+class Result:
+    loss: float
+    macs: int
+    active_ratio: float
 
 
-def train_model(model, input_signal, target_signal, epochs=5, lr=1e-3):
-    model.train()
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+def estimate_macs(hidden, samples):
+    mac_per_sample = (1 * hidden) + (hidden * hidden) + (hidden * 1)
+    return mac_per_sample * samples
+
+
+def train_dense(model, x, y, epochs=5):
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.MSELoss()
 
-    x = torch.from_numpy(input_signal).unsqueeze(1)
-    y = torch.from_numpy(target_signal).unsqueeze(1)
-
-    operations = 0
+    total_macs = 0
+    hidden = model.fc1.out_features
 
     for _ in range(epochs):
         optimizer.zero_grad()
-        output = model(x)
-        loss = criterion(output, y)
+        out = model(x)
+        loss = criterion(out, y)
         loss.backward()
         optimizer.step()
 
-        operations += x.numel()  # crude dense estimate
+        total_macs += estimate_macs(hidden, len(x))
 
-    return TrainingResult(train_loss=loss.item(),
-                          operations_estimate=operations)
+    return Result(loss.item(), total_macs, 1.0)
 
 
-# ==============================
-# 5. Run Comparison
-# ==============================
+def train_sparse(model, x, y, epochs=5):
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    criterion = nn.MSELoss()
+
+    total_macs = 0
+    total_active = 0
+    hidden = model.fc1.out_features
+
+    for _ in range(epochs):
+        optimizer.zero_grad()
+        out, active = model(x)
+        loss = criterion(out, y)
+        loss.backward()
+        optimizer.step()
+
+        total_active += active
+        total_macs += estimate_macs(hidden, active)
+
+    active_ratio = total_active / (len(x) * epochs)
+
+    return Result(loss.item(), total_macs, active_ratio)
+
+
+# ============================================================
+# Experiment Entry
+# ============================================================
 
 
 def run_experiment():
-    dataset = SyntheticAudioDataset()
+    dataset = SyntheticBurstAudio()
     noisy, clean = dataset.generate()
 
-    dense_model = DenseDSPModel()
-    event_model = EventDrivenSNN()
+    x = torch.from_numpy(noisy).unsqueeze(1)
+    y = torch.from_numpy(clean).unsqueeze(1)
 
-    dense_result = train_model(dense_model, noisy, clean)
-    event_result = train_model(event_model, noisy, clean)
+    dense_model = DenseDSP()
+    sparse_model = AetherSparcNet()
+
+    dense_result = train_dense(dense_model, x, y)
+    sparse_result = train_sparse(sparse_model, x, y)
+
+    savings = 1 - (sparse_result.macs / dense_result.macs)
 
     return {
-        "dense_loss": dense_result.train_loss,
-        "dense_ops": dense_result.operations_estimate,
-        "event_loss": event_result.train_loss,
-        "event_ops": event_result.operations_estimate,
-        "savings_ratio": 1 - (event_result.operations_estimate /
-                                dense_result.operations_estimate)
+        "dense_loss": dense_result.loss,
+        "sparse_loss": sparse_result.loss,
+        "dense_macs": dense_result.macs,
+        "sparse_macs": sparse_result.macs,
+        "active_ratio": sparse_result.active_ratio,
+        "mac_savings": savings
     }
-
-
-if __name__ == "__main__":
-    results = run_experiment()
-    print("\n=== GhostStream Comparison ===")
-    for k, v in results.items():
-        print(f"{k}: {v}")
