@@ -7,7 +7,8 @@ Run with:
 
 import streamlit as st
 import matplotlib.pyplot as plt
-from AETHER_SPARC import run_experiment, SyntheticBurstAudio
+from CoRe import run_experiment, SyntheticBurstAudio
+
 
 st.set_page_config(page_title="AETHER-SPARC Benchmark", layout="wide")
 
