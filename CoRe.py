@@ -1,22 +1,13 @@
 """
-AETHER-SPARC Backend
+GhostStream: The Zero-Waste Event Processor Backend
 An Asynchronous Event-Triggered Sparse Proportional Compute Architecture
 
-This file contains:
-- Dataset generation
-- Dense baseline model
-- AETHER-SPARC sparse model
-- Fair training routines
-- True MAC accounting 
-
-STRICT FAIRNESS:
-- Same architecture depth
-- Same hidden dimension
-- Same optimizer
-- Same loss
-- Same epochs
-- Same dataset
-- No pretrained weights
+STRICT FAIRNESS (0 Cheat):
+- Both models use GRU layers for temporal audio processing.
+- Dense RNN processes all T time steps.
+- GhostStream SNN processes ONLY asynchronous N events (N << T).
+- GhostStream reconstruction uses Zero-Order Hold (ZOH) which implies NO MACs.
+- True hardware MAC accounting applied based on actual Matrix Multiplications.
 """
 
 import numpy as np
@@ -25,28 +16,30 @@ import torch.nn as nn
 import torch.optim as optim
 from dataclasses import dataclass
 
-
 # ============================================================
 # Dataset
 # ============================================================
 
 class SyntheticBurstAudio:
-    def __init__(self, length=20000, burst_probability=0.01, noise_std=0.01):
+    def __init__(self, length=20000, burst_probability=0.005, noise_std=0.05):
         self.length = length
         self.burst_probability = burst_probability
         self.noise_std = noise_std
 
     def generate(self):
-        t = np.linspace(0, 1, self.length)
+        # Increased time scale for more pronounced bursts
+        t = np.linspace(0, 2, self.length)
         clean = np.zeros_like(t)
 
         i = 0
         while i < self.length:
             if np.random.rand() < self.burst_probability:
-                freq = np.random.uniform(200, 1500)
-                duration = np.random.randint(200, 800)
+                freq = np.random.uniform(100, 500)
+                duration = np.random.randint(400, 1500)
                 end = min(self.length, i + duration)
-                clean[i:end] += 0.7 * np.sin(2 * np.pi * freq * t[i:end])
+                # Apply a decaying envelope to make the signal realistic
+                envelope = np.exp(-3 * np.linspace(0, 1, end - i))
+                clean[i:end] += 0.8 * np.sin(2 * np.pi * freq * t[i:end]) * envelope
                 i = end
             else:
                 i += 1
@@ -54,155 +47,169 @@ class SyntheticBurstAudio:
         noisy = clean + np.random.normal(0, self.noise_std, self.length)
         return noisy.astype(np.float32), clean.astype(np.float32)
 
-
 # ============================================================
-# Models
+# Architectural Models (FAIR COMPARISON)
 # ============================================================
 
 class DenseDSP(nn.Module):
-    def __init__(self, hidden=128):
+    """Traditional Von Neumann Approach: Processes every single time step."""
+    def __init__(self, hidden=32):
         super().__init__()
-        self.fc1 = nn.Linear(1, hidden)
-        self.fc2 = nn.Linear(hidden, hidden)
-        self.fc3 = nn.Linear(hidden, 1)
-        self.relu = nn.ReLU()
+        self.hidden = hidden
+        self.rnn = nn.GRU(1, hidden, batch_first=True)
+        self.fc = nn.Linear(hidden, 1)
 
     def forward(self, x):
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+        # x: (1, T, 1)
+        out, _ = self.rnn(x) 
+        pred = self.fc(out)
+        return pred
 
-
-class AetherSparcNet(nn.Module):
-    def __init__(self, hidden=128, threshold=0.045, tau=20.0):
+class GhostStreamNet(nn.Module):
+    """Neuromorphic Approach: Asynchronous Event-Driven Spiking."""
+    def __init__(self, hidden=32, threshold=0.12):
         super().__init__()
-        # Threshold at 0.045 acts as a strict physical gate against 0.01 std noise
-        # tau is the neuromorphic synaptic leakage time constant
+        self.hidden = hidden
+        # The threshold for the Level-Crossing ADC (Analog side)
         self.threshold = threshold
-        self.tau = tau
         
-        self.fc1 = nn.Linear(1, hidden)
-        self.fc2 = nn.Linear(hidden, hidden)
-        self.fc3 = nn.Linear(hidden, 1)
-        self.relu = nn.ReLU()
+        # Input state: [signal_value, delta_t (time since last event)]
+        self.rnn = nn.GRU(2, hidden, batch_first=True)
+        self.fc = nn.Linear(hidden, 1)
 
     def forward(self, x):
-        # 1. Asynchronous Event Generation
-        # Diff filter organically blocks Gaussian background noise.
-        diff = torch.abs(x - torch.roll(x, 1, 0))
-        mask = (diff > self.threshold).float()
-        mask[0] = 1.0  # Synaptic initialization: establish base state at t=0
-
-        # Ensure mask is 1D for clean index manipulation
-        mask_1d = mask.squeeze(-1)
+        # x shape: (1, T, 1) - strictly sequential, batch=1 for neuromorphic simulation
+        x_np = x[0, :, 0].detach().cpu().numpy()
+        T = len(x_np)
         
-        # Extract strictly active event indices (0 cheat, exact boolean routing)
-        active_indices = torch.where(mask_1d > 0)[0]
-
-        if active_indices.numel() == 0:
-            return torch.zeros_like(x), 0
-
-        # 2. Sparse Compute (Execute heavy MACs ONLY on detected events)
-        x_active = x[active_indices]
-        out_active = self.relu(self.fc1(x_active))
-        out_active = self.relu(self.fc2(out_active))
-        out_active = self.fc3(out_active)
-
-        # 3. Neuromorphic Leaky Zero-Order Hold (ZOH)
-        # cumsum translates sparse computation timestamps into continuous state
-        fill_indices = (torch.cumsum(mask_1d, dim=0) - 1).long()
-
-        # Calculate exact time elapsed since the last fired event
-        t_idx = torch.arange(len(x), device=x.device).float()
-        last_event_t = t_idx[fill_indices]
-        time_since_event = t_idx - last_event_t
-
-        # Synaptic leakage: state physically decays during silence
-        decay = torch.exp(-time_since_event / self.tau).unsqueeze(1)
-
-        # Reconstruct the continuous signal organically. 
-        # Gradients will flow backward *only* to the specific timestamps that fired.
-        output = out_active[fill_indices] * decay
-
-        return output, len(active_indices)
-
+        # 1. Level-Crossing Sampling (ADC Level - Hardware Comparator, 0 MACs)
+        indices = [0]
+        last_val = x_np[0]
+        for t in range(1, T):
+            if abs(x_np[t] - last_val) >= self.threshold:
+                indices.append(t)
+                last_val = x_np[t]
+                
+        idx_tensor = torch.tensor(indices, dtype=torch.long, device=x.device)
+        N = len(indices)
+        
+        # 2. Extract Asynchronous Event Features
+        event_vals = x[0, idx_tensor, :] # (N, 1)
+        
+        # Calculate Delta T (Spike Timing)
+        t_vals = idx_tensor.float().unsqueeze(1) # (N, 1)
+        delta_t = torch.cat([torch.zeros(1, 1, device=x.device), t_vals[1:] - t_vals[:-1]], dim=0)
+        delta_t = delta_t / 100.0  # Normalize time scale for neural stability
+        
+        # Combine value and time into sensory spike package
+        event_features = torch.cat([event_vals, delta_t], dim=-1).unsqueeze(0) # (1, N, 2)
+        
+        # 3. Asynchronous Sparse Processing 
+        # (This is where the magic happens: GRU only ticks N times instead of T times)
+        out, _ = self.rnn(event_features) # (1, N, hidden)
+        event_preds = self.fc(out) # (1, N, 1)
+        
+        # 4. Zero-Order Hold (ZOH) Reconstruction (DAC Level - 0 MACs)
+        # We hold the neural output constant until the next spike arrives
+        mask = torch.zeros(T, dtype=torch.long, device=x.device)
+        mask[idx_tensor] = 1
+        event_idx = torch.cumsum(mask, dim=0) - 1 # Map every T to its most recent N
+        
+        reconstructed = event_preds[0, event_idx, :].unsqueeze(0) # (1, T, 1)
+        return reconstructed, N, idx_tensor
 
 # ============================================================
-# Training & MAC Accounting
+# True MAC Accounting & Training
 # ============================================================
+# A standard GRU cell uses: 3 * (input_size * hidden + hidden * hidden) + 3*hidden (bias)
+# For simplicity in benchmarking, we count pure multiplications: 3 * (in * h + h * h)
+
+def get_dense_macs(T, hidden):
+    gru_macs = 3 * (1 * hidden + hidden * hidden)
+    fc_macs = hidden * 1
+    return T * (gru_macs + fc_macs)
+
+def get_ghost_macs(N, hidden):
+    gru_macs = 3 * (2 * hidden + hidden * hidden)
+    fc_macs = hidden * 1
+    return N * (gru_macs + fc_macs)
 
 @dataclass
 class Result:
     loss: float
     macs: int
     active_ratio: float
+    reconstructed: np.ndarray = None
+    event_indices: np.ndarray = None
 
-
-def estimate_macs(hidden, samples):
-    mac_per_sample = (1 * hidden) + (hidden * hidden) + (hidden * 1)
-    return mac_per_sample * samples
-
-
-def train_dense(model, x, y, epochs=5):
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+def train_dense(model, x, y, epochs=15):
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = nn.MSELoss()
-
     total_macs = 0
-    hidden = model.fc1.out_features
+    
+    T = x.shape[1]
+    hidden = model.hidden
 
-    for _ in range(epochs):
+    for epoch in range(epochs):
         optimizer.zero_grad()
         out = model(x)
         loss = criterion(out, y)
         loss.backward()
         optimizer.step()
+        total_macs += get_dense_macs(T, hidden)
 
-        total_macs += estimate_macs(hidden, len(x))
+    return Result(
+        loss=loss.item(), 
+        macs=total_macs, 
+        active_ratio=1.0,
+        reconstructed=out.detach().cpu().numpy().squeeze()
+    )
 
-    return Result(loss.item(), total_macs, 1.0)
-
-
-def train_sparse(model, x, y, epochs=5):
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+def train_sparse(model, x, y, epochs=15):
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = nn.MSELoss()
-
     total_macs = 0
     total_active = 0
-    hidden = model.fc1.out_features
+    
+    T = x.shape[1]
+    hidden = model.hidden
 
-    for _ in range(epochs):
+    for epoch in range(epochs):
         optimizer.zero_grad()
-        out, active = model(x)
+        out, N, indices = model(x)
         loss = criterion(out, y)
         loss.backward()
         optimizer.step()
+        
+        total_active += N
+        total_macs += get_ghost_macs(N, hidden)
 
-        total_active += active
-        total_macs += estimate_macs(hidden, active)
+    active_ratio = total_active / (T * epochs)
 
-    active_ratio = total_active / (len(x) * epochs)
-
-    return Result(loss.item(), total_macs, active_ratio)
-
+    return Result(
+        loss=loss.item(), 
+        macs=total_macs, 
+        active_ratio=active_ratio,
+        reconstructed=out.detach().cpu().numpy().squeeze(),
+        event_indices=indices.cpu().numpy()
+    )
 
 # ============================================================
-# Experiment Entry
+# Experiment Entry Point
 # ============================================================
-
 
 def run_experiment():
     dataset = SyntheticBurstAudio()
     noisy, clean = dataset.generate()
 
-    x = torch.from_numpy(noisy).unsqueeze(1)
-    y = torch.from_numpy(clean).unsqueeze(1)
+    x = torch.from_numpy(noisy).unsqueeze(0).unsqueeze(-1) # (1, T, 1)
+    y = torch.from_numpy(clean).unsqueeze(0).unsqueeze(-1) # (1, T, 1)
 
-    dense_model = DenseDSP()
-    sparse_model = AetherSparcNet()
+    dense_model = DenseDSP(hidden=32)
+    sparse_model = GhostStreamNet(hidden=32, threshold=0.15) # Threshold tuned to ignore background noise
 
-    dense_result = train_dense(dense_model, x, y)
-    sparse_result = train_sparse(sparse_model, x, y)
+    dense_result = train_dense(dense_model, x, y, epochs=15)
+    sparse_result = train_sparse(sparse_model, x, y, epochs=15)
 
     savings = 1 - (sparse_result.macs / dense_result.macs)
 
@@ -212,5 +219,10 @@ def run_experiment():
         "dense_macs": dense_result.macs,
         "sparse_macs": sparse_result.macs,
         "active_ratio": sparse_result.active_ratio,
-        "mac_savings": savings
+        "mac_savings": savings,
+        "noisy": noisy,
+        "clean": clean,
+        "dense_recon": dense_result.reconstructed,
+        "sparse_recon": sparse_result.reconstructed,
+        "event_indices": sparse_result.event_indices
     }
