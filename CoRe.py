@@ -1,12 +1,12 @@
 """
-GhostStream: The Zero-Waste Event Processor Backend
+Aether-SPARC: The Zero-Waste Event Processor Backend
 An Asynchronous Event-Triggered Sparse Proportional Compute Architecture
 
 STRICT FAIRNESS (0 Cheat):
 - Both models use GRU layers for temporal audio processing.
 - Dense RNN processes all T time steps.
-- GhostStream SNN processes ONLY asynchronous N events (N << T).
-- GhostStream reconstruction uses Zero-Order Hold (ZOH) which implies NO MACs.
+- Aether-SPARC SNN processes ONLY asynchronous N events (N << T).
+- Aether-SPARC reconstruction uses Zero-Order Hold (ZOH) which implies NO MACs.
 - True hardware MAC accounting applied based on actual Matrix Multiplications.
 """
 
@@ -65,7 +65,7 @@ class DenseDSP(nn.Module):
         pred = self.fc(out)
         return pred
 
-class GhostStreamNet(nn.Module):
+class AetherSparcNet(nn.Module):
     """Neuromorphic Approach: Asynchronous Event-Driven Spiking."""
     def __init__(self, hidden=32, threshold=0.12):
         super().__init__()
@@ -129,7 +129,7 @@ def get_dense_macs(T, hidden):
     fc_macs = hidden * 1
     return T * (gru_macs + fc_macs)
 
-def get_ghost_macs(N, hidden):
+def get_sparc_macs(N, hidden):
     gru_macs = 3 * (2 * hidden + hidden * hidden)
     fc_macs = hidden * 1
     return N * (gru_macs + fc_macs)
@@ -182,7 +182,7 @@ def train_sparse(model, x, y, epochs=15):
         optimizer.step()
         
         total_active += N
-        total_macs += get_ghost_macs(N, hidden)
+        total_macs += get_sparc_macs(N, hidden)
 
     active_ratio = total_active / (T * epochs)
 
@@ -208,7 +208,7 @@ def run_experiment():
     dense_model = DenseDSP(hidden=32)
     # Threshold increased to 0.25 to aggressively filter out the 0.05 std background noise
     # This guarantees >90% sparsity focusing ONLY on structural signal deviations
-    sparse_model = GhostStreamNet(hidden=32, threshold=0.25)
+    sparse_model = AetherSparcNet(hidden=32, threshold=0.25)
 
     dense_result = train_dense(dense_model, x, y, epochs=15)
     sparse_result = train_sparse(sparse_model, x, y, epochs=15)

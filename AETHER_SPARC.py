@@ -1,5 +1,5 @@
 """
-GhostStream Streamlit Frontend
+Aether-SPARC Streamlit Frontend
 Run with:
     streamlit run AETHER_SPARC.py
 """
@@ -10,9 +10,9 @@ import numpy as np
 import time
 from CoRe import run_experiment
 
-st.set_page_config(page_title="GhostStream Benchmark", layout="wide")
+st.set_page_config(page_title="Aether-SPARC Benchmark", layout="wide")
 
-st.title("GhostStream: Event-Driven Processor")
+st.title("Aether-SPARC: Event-Driven Processor")
 st.subheader("Asynchronous Spiking Architecture for Sub-Nyquist Signal Processing")
 
 # Custom CSS for a serious, dark-themed button
@@ -34,13 +34,13 @@ div.stButton > button:first-child:hover {
 """, unsafe_allow_html=True)
 
 st.markdown("""
-Unlike traditional Von Neumann architectures that process uniformly across time, **GhostStream** utilizes asynchronous event-driven sampling. Employing a Level-Crossing Analog-to-Digital Converter (ADC), the neural processor remains dormant during periods of signal inactivity or noise. Computations are strictly executed upon significant signal deviations, with the system maintaining state via Zero-Order Hold (ZOH) reconstruction during null periods.
+Unlike traditional Von Neumann architectures that process uniformly across time, **Aether-SPARC** utilizes asynchronous event-driven sampling. Employing a Level-Crossing Analog-to-Digital Converter (ADC), the neural processor remains dormant during periods of signal inactivity or noise. Computations are strictly executed upon significant signal deviations, with the system maintaining state via Zero-Order Hold (ZOH) reconstruction during null periods.
 """)
 
 st.markdown("---")
 
 if st.button("Initialize Neural Run"):
-    with st.spinner("Training Dual Architectures... (Dense RNN vs GhostStream SNN)"):
+    with st.spinner("Training Dual Architectures... (Dense RNN vs Aether-SPARC SNN)"):
         start_t = time.time()
         results = run_experiment()
         dur = time.time() - start_t
@@ -57,7 +57,7 @@ if st.button("Initialize Neural Run"):
         st.metric("Compute Efficiency", "1.00x Base")
 
     with col2:
-        st.markdown("### GhostStream (Event-Driven)")
+        st.markdown("### Aether-SPARC (Event-Driven)")
         st.markdown("*Executes compute only on triggered information events.*")
         st.metric("Final Loss (MSE)", f"{results['sparse_loss']:.5f}")
         st.metric("Total MACs (Compute)", f"{results['sparse_macs']:,}")
@@ -97,7 +97,7 @@ if st.button("Initialize Neural Run"):
     axes[0].grid(True, alpha=0.3)
     
     # Mid Plot - Spikes!
-    axes[1].set_title("2. Level-Crossing ADC Spike Train (Wakes up the GhostStream)")
+    axes[1].set_title("2. Level-Crossing ADC Spike Train (Wakes up Aether-SPARC)")
     # Extract events only in zoom range
     z_events = [e for e in events if zoom_range.start <= e < zoom_range.stop]
     # offset them for plotting
@@ -114,8 +114,8 @@ if st.button("Initialize Neural Run"):
     axes[1].grid(True, axis='x', alpha=0.3)
     
     # Bottom Plot - ZOH Reconstruction
-    axes[2].set_title("3. GhostStream Output (Zero-Order Hold Neural Reconstruction)")
-    axes[2].plot(sparse_recon[zoom_range], label="GhostStream ZOH Output", color='blue', drawstyle='steps-post', linewidth=2)
+    axes[2].set_title("3. Aether-SPARC Output (Zero-Order Hold Neural Reconstruction)")
+    axes[2].plot(sparse_recon[zoom_range], label="Aether-SPARC ZOH Output", color='blue', drawstyle='steps-post', linewidth=2)
     axes[2].plot(clean[zoom_range], label="Target Signal", color='black', linestyle='--', alpha=0.7)
     axes[2].legend(loc="upper right")
     axes[2].grid(True, alpha=0.3)
