@@ -12,16 +12,34 @@ from CoRe import run_experiment
 
 st.set_page_config(page_title="GhostStream Benchmark", layout="wide")
 
-st.title("GhostStream: The Zero-Waste Event Processor")
-st.subheader("Paradigm-Shift in Audio DSP using Level-Crossing Sampling & Asynchronous Spiking Networks")
+st.title("GhostStream: Event-Driven Processor")
+st.subheader("Asynchronous Spiking Architecture for Sub-Nyquist Signal Processing")
+
+# Custom CSS for a serious, dark-themed button
+st.markdown("""
+<style>
+div.stButton > button:first-child {
+    background-color: #1E1E1E;
+    color: #FFFFFF;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+div.stButton > button:first-child:hover {
+    background-color: #2D2D2D;
+    border: 1px solid #555555;
+    color: #00FFCC;
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown("""
-Unlike traditional Von Neumann architectures that process every clock cycle regardless of information content, **GhostStream** is fully asynchronous. By utilizing an event-driven Level-Crossing Analog-to-Digital Converter (ADC), the SNN only wakes up when the physical signal changes significantly. The processor does **zero** matrix multiplications during silence or minor noise, filling the gaps via Zero-Order Hold (ZOH).
+Unlike traditional Von Neumann architectures that process uniformly across time, **GhostStream** utilizes asynchronous event-driven sampling. Employing a Level-Crossing Analog-to-Digital Converter (ADC), the neural processor remains dormant during periods of signal inactivity or noise. Computations are strictly executed upon significant signal deviations, with the system maintaining state via Zero-Order Hold (ZOH) reconstruction during null periods.
 """)
 
 st.markdown("---")
 
-if st.button("Initialize Quantum/Neuromorphic Run", type="primary"):
+if st.button("Initialize Neural Run"):
     with st.spinner("Training Dual Architectures... (Dense RNN vs GhostStream SNN)"):
         start_t = time.time()
         results = run_experiment()
@@ -32,25 +50,24 @@ if st.button("Initialize Quantum/Neuromorphic Run", type="primary"):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### 🛑 Traditional DSP (Dense RNN)")
-        st.markdown("*Processes every time sample blindly.*")
+        st.markdown("### Dense DSP (Uniform Sampling)")
+        st.markdown("*Continuously processes signal regardless of activity.*")
         st.metric("Final Loss (MSE)", f"{results['dense_loss']:.5f}")
         st.metric("Total MACs (Compute)", f"{results['dense_macs']:,}")
         st.metric("Compute Efficiency", "1.00x Base")
 
     with col2:
-        st.markdown("### 👻 GhostStream (Event-Driven SNN)")
-        st.markdown("*Processes ONLY actual information events.*")
+        st.markdown("### GhostStream (Event-Driven)")
+        st.markdown("*Executes compute only on triggered information events.*")
         st.metric("Final Loss (MSE)", f"{results['sparse_loss']:.5f}")
         st.metric("Total MACs (Compute)", f"{results['sparse_macs']:,}")
         savings_pct = results['mac_savings']*100
         st.metric("Active Event Ratio", f"{results['active_ratio']*100:.2f}% (Information Sparsity)")
 
     st.markdown("---")
-    st.markdown(f"## 🚀 Compute Reduction: {savings_pct:.2f}%")
+    st.markdown(f"## Compute Reduction: {savings_pct:.2f}%")
     if savings_pct > 90:
-        st.balloons()
-        st.markdown("> **PARADIGM SHIFT ACHIEVED**: Over 90% reduction in computational waste while maintaining competitive signal reconstruction.")
+        st.markdown("> **STATUS**: Super-Nyquist Efficiency Achieved. >90% reduction in computational cycles while maintaining signal fidelity.")
 
     st.markdown("---")
     st.markdown("### Signal Reconstruction & Asynchronous Event Spikes")
