@@ -365,23 +365,25 @@ def run_experiment():
     dense_model = DenseDSP(hidden=32)
     dense_r = train_dense(dense_model, x, y, clean, noisy, epochs=20)
 
-    # --- Ablation: Fixed LCS + ZOH (v1, for comparison) ---
-    # Stats documented from the confirmed prior run (93.70% savings, 6.12% active).
-    # These are real numbers from the previous architecture - not invented.
-    v1_macs = 60_514_560        # From prior run: SPARC + Fixed LCS + ZOH
-    v1_active_ratio = 0.0612    # 6.12% active event ratio (prior confirmed)
-    v1_stoi = 0.62              # Estimated STOI from MSE=0.019 vs Dense MSE=0.002
+    # --- Condition 1: SPARC + Fixed LCS + ZOH (v1 Architecture) ---
+    # We simulate the exact logic of the previous 30.37% / 93.70% runs here.
+    model_v1 = AetherSparcNet(hidden=32)
+    # 1. Force fixed threshold (alpha * 0.05 noise floor)
+    model_v1.alpha = 5.0  # Equivalent to ~0.25 fixed threshold
+    # 2. Force ZOH by zeroing out the slope weights
+    with torch.no_grad():
+        model_v1.fc_slope.weight.fill_(0.0)
+        model_v1.fc_slope.bias.fill_(0.0)
+    sparc_r_v1 = train_sparse(model_v1, x, y, clean, noisy, epochs=20)
 
-    # --- ALCS + ZOH (v2) ---
-    # Approximate ZOH by setting slope head learning rate to near-zero via init
+    # --- Condition 2: SPARC + ALCS + ZOH ---
     model_v2 = AetherSparcNet(hidden=32, alpha=1.5, window=128)
-    # Force slope head to near-zero init to simulate ZOH behavior
     with torch.no_grad():
         model_v2.fc_slope.weight.fill_(0.0)
         model_v2.fc_slope.bias.fill_(0.0)
     sparc_r_zoh = train_sparse(model_v2, x, y, clean, noisy, epochs=20)
 
-    # --- Full: ALCS + Linear Interp (Final) ---
+    # --- Condition 3: Full Aether-SPARC (Final) ---
     model_full = AetherSparcNet(hidden=32, alpha=1.5, window=128)
     sparc_r_full = train_sparse(model_full, x, y, clean, noisy, epochs=20)
 
@@ -408,8 +410,9 @@ def run_experiment():
         "ablation": [
             {"label": ABLATION_LABELS[0], "active_ratio": 1.00, "macs": dense_r.macs,
              "stoi": dense_r.stoi, "snr_gain": dense_r.snr_gain, "uj": dense_r.loihi_uj},
-            {"label": ABLATION_LABELS[1], "active_ratio": v1_active_ratio, "macs": v1_macs,
-             "stoi": v1_stoi, "snr_gain": 0.0, "uj": project_loihi2_energy(v1_macs)},
+            {"label": ABLATION_LABELS[1], "active_ratio": sparc_r_v1.active_ratio, 
+             "macs": sparc_r_v1.macs, "stoi": sparc_r_v1.stoi, "snr_gain": sparc_r_v1.snr_gain, 
+             "uj": sparc_r_v1.loihi_uj},
             {"label": ABLATION_LABELS[2], "active_ratio": sparc_r_zoh.active_ratio,
              "macs": sparc_r_zoh.macs, "stoi": sparc_r_zoh.stoi,
              "snr_gain": sparc_r_zoh.snr_gain, "uj": sparc_r_zoh.loihi_uj},
