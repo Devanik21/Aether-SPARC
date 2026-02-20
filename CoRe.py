@@ -7,7 +7,7 @@ This file contains:
 - Dense baseline model
 - AETHER-SPARC sparse model
 - Fair training routines
-- True MAC accounting
+- True MAC accounting 
 
 STRICT FAIRNESS:
 - Same architecture depth
