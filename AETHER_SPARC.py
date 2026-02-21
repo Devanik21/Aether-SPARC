@@ -12,7 +12,7 @@ from CoRe import run_experiment
 
 st.set_page_config(
     page_title="Aether-SPARC v3 | Research Terminal",
-    page_icon="🧠",
+    page_icon="⚛",
     layout="wide"
 )
 
@@ -79,6 +79,31 @@ st.caption(
     "Event-based MAC accounting: derived from neuromorphic state updates."
 )
 st.markdown("---")
+
+# ─── Static Theoretical Goals Card ──────────────────────────────────────
+goal_col1, goal_col2, goal_col3 = st.columns([1, 2, 1])
+with goal_col2:
+    st.markdown("""
+    <div style='background-color: #121419; padding: 20px; border-radius: 12px; border: 1px solid #1e2229; text-align: center;'>
+        <h4 style='color: #888; margin-top: 0; font-family: Courier New;'>TARGET SPECIFICATIONS</h4>
+        <div style='display: flex; justify-content: space-around; margin-top: 15px;'>
+            <div>
+                <div style='color: #00CCAA; font-size: 1.5em; font-weight: 800;'>&gt;90%</div>
+                <div style='color: #555; font-size: 0.8em;'>SPARSITY</div>
+            </div>
+            <div>
+                <div style='color: #00CCAA; font-size: 1.5em; font-weight: 800;'>MAMBA</div>
+                <div style='color: #555; font-size: 0.8em;'>ENGINE</div>
+            </div>
+            <div>
+                <div style='color: #00CCAA; font-size: 1.5em; font-weight: 800;'>LOIHI 2</div>
+                <div style='color: #555; font-size: 0.8em;'>SILICON</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 if st.button("Run Benchmark"):
     with st.spinner("Training Dense and Aether-SPARC v3 (Selective SSM + Pred. Coding)..."):
