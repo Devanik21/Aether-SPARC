@@ -371,6 +371,7 @@ Expected runtime: approximately **238 seconds** on standard CPU hardware (seed 4
 6. Taal, C. H., Hendriks, R. C., Heusdens, R., & Jensen, J. (2011). **An Algorithm for Intelligibility Prediction of Time–Frequency Weighted Noisy Speech.** *IEEE Transactions on Audio, Speech, and Language Processing*, 19(7), 2125–2136.
 7. Lichtsteiner, P., Posch, C., & Delbruck, T. (2008). **A 128×128 120 dB 15 µs Latency Asynchronous Temporal Contrast Vision Sensor.** *IEEE Journal of Solid-State Circuits*, 43(2), 566–576.
 8. Senhadji, L., & Wendling, F. (2002). **Epileptic Transient Detection: Wavelets and Time-Frequency Approaches.** *Neurophysiologie Clinique*, 32(3), 175–192.
+9. Devanik. (2026). **Aether-SPARC: Asynchronous Event-Triggered Signal Processor with Selective State Space Modelling and Predictive Coding** \[Software repository\]. Self-published. Available at: `https://github.com/Devanik/Aether-SPARC`
 
 ---
 
