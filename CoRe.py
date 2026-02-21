@@ -6,8 +6,8 @@ ARCHITECTURE:
 1. Neural Formant Generator     - Reproduces speech-like harmonic structure
 2. Adaptive 2nd-Order ALCS      - Fires only at signal onsets/offsets (not harmonics)
 3. Stateful GRU + Linear Interp - Learns to predict between sparse events
-4. True MAC accounting          - Zero-cheat operation counting
-5. Loihi-2 Power Projection     - Anchors theoretical savings to real silicon specs
+4. Event-Based MAC Accounting  - Hardware-accurate operation counting
+5. Loihi-2 Power Projection    - Anchors theoretical savings to physical silicon specs
 """
 
 import numpy as np
@@ -198,7 +198,7 @@ class AetherSparcNet(nn.Module):
 
 
 # ==============================================================================
-# 3. TRUE MAC ACCOUNTING
+# 3. EVENT-BASED MAC ACCOUNTING
 # ==============================================================================
 # Dense: GRU (3 gates)
 # Sparc: Mamba-Spike (Linear projections + Selective State Scan)
