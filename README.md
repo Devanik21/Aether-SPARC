@@ -216,7 +216,7 @@ $$\text{MACs}_{\text{sparse}} = \rho \cdot L \cdot \text{MACs}_{\text{event}}$$
 
 where $\rho$ is the empirical active duty cycle. For the dense GRU baseline, every timestep is processed:
 
-$$\text{MACs}_{\text{dense}} = L \cdot \text{MACs}_{\text{dense\_cell}}$$
+$$\text{MACs}_{\text{dense}} = L \cdot \text{MACs}_{\text{dense-cell}}$$
 
 ### Loihi 2 Energy Projection
 
@@ -234,7 +234,7 @@ This projection is valid under the assumption that each MAC in the software simu
 
 The fractional MAC reduction is defined as:
 
-$$\eta_{\text{MAC}} = 1 - \frac{\text{MACs}_{\text{sparse}}}{\text{MACs}_{\text{dense}}} = 1 - \rho \cdot \frac{\text{MACs}_{\text{event}}}{\text{MACs}_{\text{dense\_cell}}}$$
+$$\eta_{\text{MAC}} = 1 - \frac{\text{MACs}_{\text{sparse}}}{\text{MACs}_{\text{dense}}} = 1 - \rho \cdot \frac{\text{MACs}_{\text{event}}}{\text{MACs}_{\text{dense-cell}}}$$
 
 Since energy scales linearly with MACs under the Loihi 2 model, $\eta_{\text{energy}} = \eta_{\text{MAC}}$.
 
