@@ -361,7 +361,72 @@ Expected runtime: approximately **238 seconds** on standard CPU hardware (seed 4
 
 ---
 
-## 11. References
+## 11. Application Screenshots
+
+The following screenshots document the Aether-SPARC v3 research terminal interface as rendered by the Streamlit frontend (`AETHER_SPARC.py`). All panels correspond to a single benchmark execution under seed `42`.
+
+---
+
+### 11.1 Target Specifications Panel
+
+<img width="1190" height="530" alt="image" src="https://github.com/user-attachments/assets/62fdfdc2-c923-497b-8a4a-4eaf2ed224e0" />
+
+
+*The static header card displaying the three primary design targets prior to benchmark execution: sparsity objective (>90%), compute engine (Mamba SSM), and silicon target (Intel Loihi 2).*
+
+---
+
+### 11.2 Benchmark Metrics — Dense vs. Aether-SPARC v3
+
+<img width="1190" height="530" alt="image" src="https://github.com/user-attachments/assets/f4c64ec3-d107-4f4f-929b-43cd56169a29" />
+
+<img width="1190" height="530" alt="image" src="https://github.com/user-attachments/assets/ce878909-baff-4d28-b886-9c229a516d50" />
+
+
+
+*Side-by-side metric display comparing the Dense GRU baseline against Aether-SPARC v3. Columns report MSE Loss, MACs, SNR Gain (dB), STOI (approx), and projected Loihi 2 energy (µJ), with signed delta annotations on the sparse column.*
+
+---
+
+### 11.3 Ablation Study Table
+
+<img width="1190" height="530" alt="image" src="https://github.com/user-attachments/assets/a455591d-fe13-4561-8c85-0dabffa9a712" />
+
+
+*Progressive ablation across four conditions (Dense GRU → Fixed LCS + ZOH → ALCS + ZOH → Mamba + Predictive Coding), reporting active ratio, MACs, STOI, SNR Gain, and projected energy per condition.*
+
+---
+
+### 11.4 Signal Reconstruction and Spike Train
+
+<img width="1190" height="530" alt="image" src="https://github.com/user-attachments/assets/0204ef8e-f639-4fb3-b88f-72c90b9cd245" />
+
+
+<img width="1190" height="530" alt="image" src="https://github.com/user-attachments/assets/cd978e29-6c3b-40a4-ab95-d5b857d0d01d" />
+
+<img width="1190" height="530" alt="image" src="https://github.com/user-attachments/assets/7d491052-0203-4aad-8ebf-29c915c497b7" />
+
+
+*Three-panel visualisation over a 1,600-sample burst window. Panel 1: noisy sensor input overlaid with clean target signal. Panel 2: predictive coding spike train — vertical markers indicate event-triggered SNN activations, annotated with duty cycle percentage. Panel 3: Aether-SPARC v3 reconstruction overlaid with the clean target.*
+
+---
+
+### 11.5 Executive Architectural Summary
+
+
+<img width="1190" height="530" alt="image" src="https://github.com/user-attachments/assets/cab4aa6d-ed64-498e-9200-ce54e9fb130a" />
+
+
+
+*System performance index table summarising total compute (MACs), projected silicon energy (µJ), active cycle duty, and efficiency delta between the Von Neumann dense baseline and Aether-SPARC v3.*
+
+---
+
+> **Note:** To reproduce these screenshots, execute `streamlit run AETHER_SPARC.py` and press **Run Benchmark**. All panels are generated deterministically under seed `42`. Place screenshot image files under `assets/screenshots/` relative to the repository root to render them correctly in this document.
+
+---
+
+## 12. References
 
 1. Gu, A., Goel, K., & Ré, C. (2021). **Efficiently Modeling Long Sequences with Structured State Spaces.** *ICLR 2022.* arXiv:2111.00396.
 2. Gu, A., & Dao, T. (2023). **Mamba: Linear-Time Sequence Modeling with Selective State Spaces.** arXiv:2312.00752.
