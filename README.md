@@ -148,7 +148,7 @@ At non-event timesteps, the reconstruction must be inferred from the last known 
 
 **Zero-Order Hold (ZOH):** The reconstruction holds the value of the most recent event sample until the next event:
 
-$$\tilde{x}[n] = x[n^*], \qquad n^* = \max\{k \leq n : s[k] = 1\}$$
+$$\tilde{x}[n] = x[n^{*}], \qquad n^{*} = \max \{ k \leq n : s[k] = 1 \}$$
 
 ZOH introduces a staircase-like reconstruction artefact, degrading spectral fidelity at frequencies where the inter-event interval exceeds half the Nyquist period. It is used in v1 and v2 of the ablation.
 
@@ -181,7 +181,7 @@ Raw Input x[n]
                ▼                            ▼
 ┌──────────────────────────┐   ┌────────────────────────────┐
 │  Selective SSM (Mamba)   │   │  Linear Interpolation      │
-│  h[n] = Ā[n]h[n-1]      │   │  x̃[n] = x[n*] + α·Δx      │
+│  h[n] = Ā[n]h[n-1]      │   │  x̃[n] = x[n^{*}] + α·Δx   │
 │         + B̄[n]·x[n]     │   │  (zero MAC cost)           │
 │  ỹ[n] = C[n]·h[n]       │   └────────────────────────────┘
 └──────────────────────────┘
