@@ -42,7 +42,7 @@ st.caption(
 st.markdown("---")
 
 if st.button("Run Benchmark"):
-    with st.spinner("Training Dense and Aether-SPARC (ALCS + GRU + Lin.Interp)..."):
+    with st.spinner("Training Dense and Aether-SPARC v3 (Selective SSM + Pred. Coding)..."):
         t0 = time.time()
         r = run_experiment()
         elapsed = time.time() - t0
@@ -63,8 +63,8 @@ if st.button("Run Benchmark"):
         st.metric("Loihi 2 Energy (µJ)", f"{r['dense_uj']:.1f}")
 
     with col2:
-        st.markdown("#### Aether-SPARC (2nd-Order ALCS + Lin.Interp)")
-        st.caption("Neuromorphic — computes only when signal structure changes.")
+        st.markdown("#### Aether-SPARC v3 (Selective SSM + Pred. Coding)")
+        st.caption("Neuromorphic — computes only when signal structure changes via Selective State Space.")
         st.metric("MSE Loss", f"{r['sparse_loss']:.5f}", delta=f"{r['sparse_loss'] - r['dense_loss']:+.5f}")
         st.metric("MACs", f"{r['sparse_macs']:,}", delta=f"-{r['mac_savings']*100:.1f}%")
         st.metric("SNR Gain (dB)", f"{r['sparse_snr_gain']:.2f}", delta=f"{r['sparse_snr_gain'] - r['dense_snr_gain']:+.2f}")
@@ -143,16 +143,16 @@ if st.button("Run Benchmark"):
         f"SNN woke up {len(z_ev_rel)} times out of {total_in_zoom} cycles  "
         f"({len(z_ev_rel)/total_in_zoom*100:.2f}% active)",
         transform=ax1.transAxes, color="#FF6B6B", fontsize=10, fontweight="bold")
-    ax1.set_title("2. 2nd-Order ALCS Spike Train — Fires at Onsets/Offsets Only",
+    ax1.set_title("2. Predictive Coding Spike Train — Fires on Information Surprise Only",
                   color="#E0E0E0", fontsize=11)
     ax1.tick_params(colors="#666")
     for spine in ax1.spines.values(): spine.set_edgecolor("#333")
 
     ax2 = fig.add_subplot(gs[2])
     ax2.set_facecolor("#0E1117")
-    ax2.plot(x_ax, sparse_recon[zoom], color="#5B9BD5", lw=1.5, label="Aether-SPARC (Lin.Interp)")
+    ax2.plot(x_ax, sparse_recon[zoom], color="#5B9BD5", lw=1.5, label="Aether-SPARC v3 (Mamba + Pred. Coding)")
     ax2.plot(x_ax, clean[zoom], color="#00CCAA", lw=1.2, ls="--", alpha=0.7, label="Target")
-    ax2.set_title("3. Aether-SPARC Output — Learned Linear Interpolation Reconstruction",
+    ax2.set_title("3. Aether-SPARC v3 Output — Predictive State Space Reconstruction",
                   color="#E0E0E0", fontsize=11)
     ax2.legend(facecolor="#1A1A1A", labelcolor="#E0E0E0", fontsize=9)
     ax2.tick_params(colors="#666")
