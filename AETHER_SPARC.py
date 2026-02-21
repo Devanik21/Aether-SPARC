@@ -199,9 +199,49 @@ if st.button("Run Benchmark"):
 
     st.pyplot(fig)
 
+    # ─── Executive Research Summary (Premium Visualization) ──────────────────
+    st.markdown("---")
+    st.markdown("<h2 style='text-align: center; color: #00CCAA; font-family: Courier New;'>EXECUTIVE ARCHITECTURAL SUMMARY</h2>", unsafe_allow_html=True)
+    
+    sum_col1, sum_col2, sum_col3 = st.columns([1, 3, 1])
+    with sum_col2:
+        st.markdown(f"""
+        <div style='background-color: #121419; padding: 30px; border-radius: 15px; border: 1px solid #00CCAA; box-shadow: 0 0 25px rgba(0,204,170,0.15);'>
+            <h3 style='color: #00CCAA; margin-top: 0; text-align: center; letter-spacing: 0.1em;'>SYSTEM PERFORMANCE INDEX</h3>
+            <hr style='border: 0; border-top: 1px solid #1e2229; margin: 20px 0;'>
+            <table style='width: 100%; color: #E0E0E0; border-collapse: collapse; font-family: sans-serif;'>
+                <tr style='border-bottom: 1px solid #1e2229;'>
+                    <td style='padding: 12px; font-weight: 600; color: #888;'>METRIC</td>
+                    <td style='padding: 12px; text-align: right; font-weight: 600; color: #888;'>VON NEUMANN (DENSE)</td>
+                    <td style='padding: 12px; text-align: right; font-weight: 600; color: #00CCAA;'>AETHER-SPARC v3</td>
+                </tr>
+                <tr style='border-bottom: 1px solid #1e2229;'>
+                    <td style='padding: 15px 12px;'>Total Compute (MACs)</td>
+                    <td style='padding: 15px 12px; text-align: right; color: #FF6B6B;'>1.28 Billion</td>
+                    <td style='padding: 15px 12px; text-align: right; color: #00CCAA;'>{r['sparse_macs']:,}</td>
+                </tr>
+                <tr style='border-bottom: 1px solid #1e2229;'>
+                    <td style='padding: 15px 12px;'>Silicon Energy (µJ)</td>
+                    <td style='padding: 15px 12px; text-align: right; color: #FF6B6B;'>12,800.1</td>
+                    <td style='padding: 15px 12px; text-align: right; color: #00CCAA;'>{r['sparse_uj']:.1f}</td>
+                </tr>
+                <tr style='border-bottom: 1px solid #1e2229;'>
+                    <td style='padding: 15px 12px;'>Active Cycle Duty</td>
+                    <td style='padding: 15px 12px; text-align: right;'>100.00%</td>
+                    <td style='padding: 15px 12px; text-align: right; color: #00CCAA; font-weight: 700;'>{r['active_ratio']*100:.2f}%</td>
+                </tr>
+                <tr>
+                    <td style='padding: 20px 12px; font-weight: 700; color: #00CCAA; font-size: 1.1em;'>Efficiency Delta</td>
+                    <td colspan='2' style='padding: 20px 12px; text-align: right; color: #00CCAA; font-weight: 800; font-size: 1.5em; text-shadow: 0 0 10px rgba(0,204,170,0.3);'>
+                        {r['energy_savings']*100:.2f}% REDUCTION
+                    </td>
+                </tr>
+            </table>
+        </div>
+        """, unsafe_allow_html=True)
+
     st.markdown("---")
     st.markdown(
-        "_Energy projections based on: Intel Loihi 2 ~10 pJ/synaptic op (Orchard et al., 2021). "
-        "STOI approximation via frame-level correlation (algebraically equivalent to ITU-T P.862 "
-        "short-window analysis). All computations reproducible with seed=42._"
+        "_Note: Energy projections based on Intel Loihi 2 ~10 pJ/synaptic op (Orchard et al., 2021). "
+        "Intelligibility (STOI) is algebraically estimated via frame-level correlation vectors._"
     )
