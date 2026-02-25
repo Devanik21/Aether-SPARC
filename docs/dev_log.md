@@ -1,0 +1,3 @@
+- Aligned theoretical compute-reduction estimates with constraints imposed by neuromorphic scheduling mechanisms.
+- Analyzed edge cases where bursty inputs may violate assumed sparsity patterns and require fallback execution paths.
+- Reviewed assumptions used in Loihi-class energy projections under asynchronous execution semantics.
