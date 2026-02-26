@@ -3,3 +3,4 @@
 - Reviewed assumptions used in Loihi-class energy projections under asynchronous execution semantics.
 - Reframed intermediate observations as hypotheses suitable for controlled empirical validation.
 - Test: verifying GitHub Actions identity.
+- Test: verifying commit loop integrity.
