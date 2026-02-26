@@ -4,3 +4,4 @@
 - Reframed intermediate observations as hypotheses suitable for controlled empirical validation.
 - Test: verifying GitHub Actions identity.
 - Test: verifying commit loop integrity.
+- Test: validating per-commit execution semantics.
