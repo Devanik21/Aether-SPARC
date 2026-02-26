@@ -13,6 +13,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Decide random commit count (5–10)
         run: echo "COUNT=$((RANDOM % 6 + 5))" >> $GITHUB_ENV
 
@@ -23,15 +28,15 @@ jobs:
 
           NOTES=(
             "Test: validating per-commit execution semantics."
-            "Test: confirming auto-commit action behavior."
+            "Test: confirming auto-commit behavior."
             "Test: verifying commit loop integrity."
-            "Test: checking documentation-only diff."
-            "Test: ensuring workflow permissions are correct."
+            "Test: ensuring documentation-only diff."
+            "Test: checking workflow permissions."
             "Test: validating commit frequency control."
             "Test: confirming no code paths are touched."
-            "Test: ensuring deterministic cleanup after test."
-            "Test: verifying GitHub Actions commit visibility."
-            "Test: confirming end-to-end automation correctness."
+            "Test: verifying GitHub Actions identity."
+            "Test: confirming push stability."
+            "Test: end-to-end automation check."
           )
 
           for i in $(seq 1 $COUNT); do
