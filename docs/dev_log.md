@@ -5,3 +5,4 @@
 - Test: verifying GitHub Actions identity.
 - Test: verifying commit loop integrity.
 - Test: validating per-commit execution semantics.
+- Test: confirming no code paths are touched.
