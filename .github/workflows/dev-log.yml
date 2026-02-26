@@ -21,7 +21,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Decide random commit count (3–7)
-        run: echo "COUNT=$((RANDOM % 5 + 3))" >> $GITHUB_ENV
+        run: echo "COUNT=$((RANDOM % 3 + 3))" >> $GITHUB_ENV
 
       - name: Update dev log with per-commit research notes
         run: |
