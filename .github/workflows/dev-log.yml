@@ -1,12 +1,10 @@
-name: Dev Log Automation
+name: Dev Log Automation (FAST TEST)
 
 on:
-  schedule:
-    - cron: "0 3 * * *"   # daily (UTC)
   workflow_dispatch:
 
 jobs:
-  dev-log:
+  dev-log-test:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,45 +13,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Decide random commit count (1–7)
-        run: echo "COUNT=$((RANDOM % 7 + 1))" >> $GITHUB_ENV
+      - name: Decide random commit count (5–10)
+        run: echo "COUNT=$((RANDOM % 6 + 5))" >> $GITHUB_ENV
 
-      - name: Update dev log (Aether-SPARC research-grade)
+      - name: Generate commits instantly
         run: |
           mkdir -p docs
           touch docs/dev_log.md
 
           NOTES=(
-            "Revisited assumptions underlying asynchronous state updates to ensure correctness under variable inter-event latency."
-            "Refined the formulation of surprise-triggered computation to better align predictive coding signals with sparse state updates."
-            "Audited interactions between Selective SSM gating and predictive error propagation to prevent unintended feedback amplification."
-            "Reviewed conditions under which state updates can be safely skipped without degrading long-horizon temporal consistency."
-            "Clarified the separation between representational dynamics and control logic in the asynchronous execution pathway."
-            "Documented trade-offs between computational sparsity and temporal fidelity across distinct signal regimes."
-            "Analyzed edge cases where bursty inputs may violate assumed sparsity patterns and require fallback execution paths."
-            "Re-examined MAC accounting methodology to ensure hardware-accurate attribution under event-driven execution."
-            "Aligned theoretical compute-reduction estimates with constraints imposed by neuromorphic scheduling mechanisms."
-            "Reviewed assumptions used in Loihi-class energy projections under asynchronous execution semantics."
-            "Identified sources of implicit coupling between predictive coding error signals and SSM state evolution."
-            "Evaluated sensitivity of the system to surprise-threshold calibration across varying input statistics."
-            "Clarified invariants required to maintain stability when predictive errors are sparse but high-magnitude."
-            "Documented known limitations of the current surprise metric under non-stationary signal distributions."
-            "Considered alternative formulations of surprise that preserve sparsity while improving robustness."
-            "Reviewed architectural decisions to ensure reversibility prior to hardware-specific optimization."
-            "Outlined candidate ablation studies to isolate the effects of selective state updates versus predictive coding."
-            "Reframed intermediate observations as hypotheses suitable for controlled empirical validation."
-            "Ensured documentation reflects intended execution semantics rather than incidental implementation details."
-            "Recorded open questions regarding scaling behavior under increased temporal resolution and sensor bandwidth."
+            "Test: validating per-commit execution semantics."
+            "Test: confirming auto-commit action behavior."
+            "Test: verifying commit loop integrity."
+            "Test: checking documentation-only diff."
+            "Test: ensuring workflow permissions are correct."
+            "Test: validating commit frequency control."
+            "Test: confirming no code paths are touched."
+            "Test: ensuring deterministic cleanup after test."
+            "Test: verifying GitHub Actions commit visibility."
+            "Test: confirming end-to-end automation correctness."
           )
 
           for i in $(seq 1 $COUNT); do
             IDX=$((RANDOM % ${#NOTES[@]}))
             echo "- ${NOTES[$IDX]}" >> docs/dev_log.md
-            sleep $((RANDOM % 600 + 120))   # 2–12 min delay
+            git add docs/dev_log.md
+            git commit -m "test: dev log commit $i"
           done
 
-      - name: Auto commit & push
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "docs: Aether-SPARC research dev log update"
-          file_pattern: docs/dev_log.md
+      - name: Push commits
+        run: git push
