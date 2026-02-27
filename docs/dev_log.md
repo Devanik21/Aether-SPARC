@@ -18,3 +18,11 @@
 - Projected Energy Metric: 10 pJ per synaptic operation (Intel Loihi 2 Target).
 ---
 
+## Research Log Entry: 2026-02-27 06:38:46 UTC
+### Fundamental Objective
+> This work investigates asynchronous event-triggered computation via Selective SSM (Mamba) to achieve competitive signal reconstruction at <10% MAC budget.
+
+- Log verified against Aether-SPARC v3 specifications (Deterministic Seed 42).
+- Projected Energy Metric: 10 pJ per synaptic operation (Intel Loihi 2 Target).
+---
+
