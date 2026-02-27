@@ -8,3 +8,4 @@
 - Test: confirming no code paths are touched.
 - Test: confirming no code paths are touched.
 - Recorded open questions regarding scaling behavior under increased temporal resolution and sensor bandwidth.
+- Clarified invariants required to maintain stability when predictive errors are sparse but high-magnitude.
