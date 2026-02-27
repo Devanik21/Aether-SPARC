@@ -7,3 +7,4 @@
 - Test: validating per-commit execution semantics.
 - Test: confirming no code paths are touched.
 - Test: confirming no code paths are touched.
+- Recorded open questions regarding scaling behavior under increased temporal resolution and sensor bandwidth.
